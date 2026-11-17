@@ -1,0 +1,109 @@
+name: Nivara — CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────
+  #  PHASE 1: SAFETY RED-TEAM (MUST PASS FIRST)
+  # ─────────────────────────────────────────────
+  safety-redteam:
+    name: 🚨 Safety Red-Team & Clinical Boundaries
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Safety Red-Team Benchmark (100% recall required)
+        run: python -m pytest tests/test_safety_redteam.py -v --tb=short
+
+  # ─────────────────────────────────────────────
+  #  PHASE 2: STATE MACHINE & UNIT TESTS
+  # ─────────────────────────────────────────────
+  unit-tests:
+    name: 🧪 State Machine & Agent Tests
+    runs-on: ubuntu-latest
+    needs: safety-redteam
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: python -m pytest tests/test_state_machine.py -v --tb=short
+
+  # ─────────────────────────────────────────────
+  #  PHASE 3: INTEGRATION TESTS (IN-MEMORY DB)
+  # ─────────────────────────────────────────────
+  integration-tests:
+    name: 🔗 Integration Pipeline Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt aiosqlite
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///:memory:
+          LLM_API_KEY: mock-key
+        run: python -m pytest tests/test_integration.py -v --tb=short
+
+  # ─────────────────────────────────────────────
+  #  PHASE 4: DOCKER BUILD VERIFICATION
+  # ─────────────────────────────────────────────
+  docker-build:
+    name: 🐳 Docker Build Verification
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -t nivara-backend:ci ./backend
+
+      - name: Smoke test — health endpoint
+        run: |
+          docker run -d -p 8000:8000 \
+            -e DATABASE_URL=sqlite+aiosqlite:///./nivara.db \
+            -e LLM_API_KEY=mock-key \
+            --name nivara-ci nivara-backend:ci
+          sleep 5
+          curl --fail http://localhost:8000/health
+          docker stop nivara-ci
+

@@ -1,0 +1,71 @@
+/* Coping Toolbox, Bookmark Button & Milestone Toast additions */
+
+/* ── Bookmark button on bot messages ───────────── */
+.message-bubble.bot .bookmark-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: var(--color-text-light);
+}
+.message-bubble.bot:hover .bookmark-btn {
+  opacity: 1;
+}
+
+/* ── Milestone Toast ───────────────────────────── */
+.milestone-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: linear-gradient(135deg, #2E5442, #3B6B55);
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 999;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+}
+.milestone-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ── Coping Toolbox Section in Bookmarks View ─── */
+.toolbox-item {
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.toolbox-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Responsive: collapse sidebar on small screens  */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .main-stage {
+    width: 100%;
+  }
+}
+

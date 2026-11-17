@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: nivara-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: nivara_user
+      POSTGRES_PASSWORD: nivara_secure_password
+      POSTGRES_DB: nivara_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nivara_user -d nivara_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nivara-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://nivara_user:nivara_secure_password@db:5432/nivara_db
+      - LLM_MODEL_NAME=gemini-1.5-pro
+      - SAFETY_STRICT_MODE=True
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+
