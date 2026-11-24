@@ -528,3 +528,6 @@ input:checked + .slider:before { transform: translateX(14px); }
   box-shadow: var(--shadow-lg);
 }
 
+
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
